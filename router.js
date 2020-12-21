@@ -5,7 +5,7 @@ const Query = require('./models/Query')
 const Unit = require('./models/Unit')
 
 router.post(
-    '/сhange',
+    '/change',
     [
         check('distance').notEmpty(),
         check('convertTo').isString().notEmpty()
@@ -18,21 +18,26 @@ router.post(
             return res.status(400).json({errors: errors.array(), message: 'Некорректные входящие данные при конвертации единицы измерения'})
         }
 
-        const {distance, convertTo} = req.body
-        const {unit, value} = distance
+        const {distance, convertTo} = req.body  
+        const {unit, value} = distance 
 
-        const exist = await Unit.findOne({ name: unit }) && await Unit.findOne({ name: convertTo })
+        const fromUnit = await Unit.findOne({ unit: unit }) 
+        const toUnit = await Unit.findOne({ unit: convertTo })
 
-        if(!exist) {
-            return res.status(400).json({message: 'Такой единицы измерения не существует в базе данных'})
+        if(!fromUnit) {
+            return res.status(400).json({message: 'Конвертируемой единицы измерения не существует в базе данных'})
         }
 
-        const convertFromValue = Unit.findOne({name: unit}).value
-        const convertToValue = Unit.findOne({name: convertTo}).value
+        if(!toUnit) {
+            return res.status(400).json({message: 'Результирующей единицы измерения не существует в базе данных'})
+        }
 
-        const convertValue = +value*(convertFromValue/convertToValue).toFixed(2)
+        const convertFromValue = fromUnit.value
+        const convertToValue = toUnit.value
 
-        res.json({ unit: convertTo, value: convertValue})
+        const convertValue = +value*(convertFromValue/convertToValue)
+
+        res.json({ unit: convertTo, value: convertValue, convertFromValue, convertToValue})
 
     } catch (error) {
         res.status(500).json({message: 'Произошла ошибка'})
